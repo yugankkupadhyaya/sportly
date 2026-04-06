@@ -1,7 +1,10 @@
 // services/match.service.ts
 
+import { ZodNumber } from 'zod';
+import { $ZodNumberParams } from 'zod/v4/core';
 import { db } from '../config/db';
 import { matches } from '../db/schema';
+import { desc } from 'drizzle-orm';
 
 // optional helper
 const getMatchStatus = (startTime: string, endTime: string) => {
@@ -30,4 +33,12 @@ export const createMatchService = async (data: any) => {
     .returning();
 
   return event;
+};
+
+export const listMatchesService = async (limit: number) => {
+
+return await db.select().from(matches).orderBy((desc(matches.startTime))).limit(limit);
+
+
+
 };
