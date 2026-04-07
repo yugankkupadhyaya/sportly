@@ -14,6 +14,10 @@ export const createMatch = async (req: Request, res: Response) => {
 
   try {
     const result = await createMatchService(parsed.data);
+  const broadcast = req.app.locals.broadcastMatchCreated;
+  if (broadcast) {
+    broadcast(result);
+  }
 
     return res.status(201).json({
       message: 'Match created',
