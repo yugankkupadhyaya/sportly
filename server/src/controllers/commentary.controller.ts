@@ -16,6 +16,10 @@ export const createCommentaryController = async (req: Request, res: Response) =>
 
     const result = await commentaryService.createCommentaryService(matchId, validatedBody);
 
+    if (res.app.locals.broadcastCommentary) {
+      res.app.locals.broadcastCommentary(matchId.toString(), result);
+    }
+
     return res.status(201).json({
       success: true,
       data: result,
@@ -39,21 +43,17 @@ export const createCommentaryController = async (req: Request, res: Response) =>
 
 export const listCommentariesController = async (req: Request, res: Response) => {
   try {
-   
     const { id } = matchIdParamSchema.parse(req.params);
 
     const { limit } = req.query;
 
-
     const commentaries = await commentaryService.listCommentariesService(Number(id), Number(limit));
 
-    
     return res.status(200).json({
       success: true,
       data: commentaries,
     });
   } catch (error) {
-  
     if (error instanceof ZodError) {
       return res.status(400).json({
         success: false,

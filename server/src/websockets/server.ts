@@ -2,15 +2,28 @@ import websocket, { WebSocketServer, Server } from 'ws';
 import { InferSelectModel } from 'drizzle-orm';
 import { matches } from '../db/schema';
 
-const matchSubscriber = new Map();
-function subscribe(matchId: string, socket: websocket) {
-  if (!matchSubscriber.has(matchId)) {
-    matchSubscriber.set(matchId, new Set());
-  }
-  matchSubscriber.get(matchId).add(socket);
+interface ExtendedWebSocket extends websocket {
+  subscriptions: Set<string>;
 }
 
-function unsubscribe(matchId: string, socket: websocket) {
+const matchSubscriber = new Map<string, Set<ExtendedWebSocket>>();
+
+function subscribe(matchId: string, socket: ExtendedWebSocket) {
+  if (!matchSubscriber.has(matchId)) {
+    matchSubscriber.set(matchId, new Set());
+    console.log(`Created new subscription set for matchId: ${matchId}`);
+  }
+  matchSubscriber.get(matchId)!.add(socket);
+  console.log(`WebSocket subscribed to matchId: ${matchId}`);
+
+  if (!socket.subscriptions) {
+    socket.subscriptions = new Set();
+  }
+  socket.subscriptions.add(matchId);
+  console.log(`WebSocket subscriptions updated: ${Array.from(socket.subscriptions).join(', ')}`);
+}
+
+function unsubscribe(matchId: string, socket: ExtendedWebSocket) {
   const subscribers = matchSubscriber.get(matchId);
 
   if (!subscribers) return;
@@ -19,61 +32,81 @@ function unsubscribe(matchId: string, socket: websocket) {
   if (subscribers.size === 0) {
     matchSubscriber.delete(matchId);
   }
+
+  // Remove matchId from socket subscriptions
+  if (socket.subscriptions) {
+    socket.subscriptions.delete(matchId);
+  }
 }
 
-function cleanupSubscriptions(socket: websocket) {
+function cleanupSubscriptions(socket: ExtendedWebSocket) {
+  if (!socket.subscriptions) return;
+
   for (const matchId of socket.subscriptions) {
     unsubscribe(matchId, socket);
   }
 }
 
 function broadcastToMatch(matchId: string, payload: any) {
+  console.log('Looking for subscribers of:', matchId);
+  console.log('Current map keys:', Array.from(matchSubscriber.keys()));
   const subscribers = matchSubscriber.get(matchId);
-  if (!subscribers) return;
+  if (!subscribers) {
+    console.log(`No subscribers found for matchId: ${matchId}`);
+    return;
+  }
 
   const message = JSON.stringify(payload);
+  console.log(`Broadcasting message to matchId: ${matchId}, payload: ${message}`);
+
   for (const subscriber of subscribers) {
     if (subscriber.readyState === websocket.OPEN) {
-      subscriber.send(message);
+      try {
+        subscriber.send(message);
+        console.log(`Message sent to subscriber for matchId: ${matchId}`);
+      } catch (error) {
+        console.error(`Failed to send message to subscriber: ${error}`);
+      }
+    } else {
+      console.log(`Subscriber for matchId: ${matchId} is not open`);
     }
   }
 }
 
-function handleMessage(socket: websocket, data: any) {
+function handleMessage(socket: ExtendedWebSocket, data: any) {
   let message;
 
   try {
     message = JSON.parse(data.toString());
+    console.log('Received message:', message);
   } catch (error) {
+    console.error('Invalid JSON received:', data.toString());
     sendJson(socket, {
       type: 'error',
       message: 'Invalid JSON',
     });
-  }
-
-  if (message?.type === subscribe && Number.isInteger(message.matchId)) {
-    subscribe(message.matchId, socket);
-    socket.subscriptions.add(message.matchId);
-    sendJson(socket, {
-      type: 'subscribed',
-      matchId: message.matchId,
-    });
     return;
   }
 
-  if (message?.type === 'unsubscribe' && Number.isInteger(message.matchId)) {
-    unsubscribe(message.matchId, socket);
-    socket.subscriptions.delete(message.matchId);
-    sendJson(socket, {
-      type: 'unsubscribed',
-      matchId: message.matchId,
-    });
-    return;
+  if (message?.type === 'subscribe') {
+    const matchId = Number(message.matchId);
+
+    if (!Number.isInteger(matchId)) {
+      sendJson(socket, {
+        type: 'error',
+        message: 'Invalid matchId',
+      });
+      return;
+    }
+
+    subscribe(matchId.toString(), socket);
+  } else {
+    console.log('Unknown message type or invalid matchId:', message);
   }
 }
 
 type Match = InferSelectModel<typeof matches>;
-function sendJson(socket: websocket, payload: any) {
+function sendJson(socket: ExtendedWebSocket, payload: any) {
   if (socket.readyState !== websocket.OPEN) return;
 
   socket.send(JSON.stringify(payload));
@@ -95,12 +128,13 @@ export function attachWebSocketServer(server: any) {
   });
 
   wss.on('connection', (socket: websocket) => {
-    socket.subscriptions = new Set();
-    sendJson(socket, {
+    const extendedSocket = socket as ExtendedWebSocket;
+    extendedSocket.subscriptions = new Set();
+    sendJson(extendedSocket, {
       type: 'welcome',
     });
     socket.on('message', (data) => {
-      handleMessage(socket, data);
+      handleMessage(extendedSocket, data);
     });
 
     socket.on('error', () => {
@@ -108,7 +142,7 @@ export function attachWebSocketServer(server: any) {
     });
 
     socket.on('close', () => {
-      cleanupSubscriptions(socket);
+      cleanupSubscriptions(extendedSocket);
     });
 
     socket.on('error', console.error);
@@ -120,7 +154,7 @@ export function attachWebSocketServer(server: any) {
     });
   }
 
-  function broadcastCommentary(matchId: string, commentary: string) {
+  function broadcastCommentary(matchId: string, commentary: any) {
     broadcastToMatch(matchId, {
       type: 'commentary',
       data: commentary,

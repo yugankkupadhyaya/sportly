@@ -2,6 +2,7 @@ import { db } from '../config/db.js';
 import { commentary } from '../db/schema.js';
 import { CreateCommentaryInput } from '../validation/commentry.validation.js';
 import { eq, desc } from 'drizzle-orm';
+
 export const createCommentaryService = async (matchId: number, data: CreateCommentaryInput) => {
   const [newCommentary] = await db
     .insert(commentary)

@@ -10,11 +10,12 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 const server = http.createServer(app);
 
-const { broadcastMatchCreated } = attachWebSocketServer(server);
+const { broadcastMatchCreated, broadcastCommentary } = attachWebSocketServer(server);
 app.locals.broadcastMatchCreated = broadcastMatchCreated;
+app.locals.broadcastCommentary = broadcastCommentary;
 
 server.listen(PORT, HOST, () => {
-  const baseUrl = HOST === '0.0.0.0' ? `http://localhost${PORT}` : `HTTP://${HOST}:${PORT}`;
+  const baseUrl = HOST === '0.0.0.0' ? `http://localhost:${PORT}` : `HTTP://${HOST}:${PORT}`;
   console.log(`Server is running on port ${baseUrl}`);
   console.log(` Websocket Server is running on port ${baseUrl.replace('http', 'ws')}/ws`);
 });
