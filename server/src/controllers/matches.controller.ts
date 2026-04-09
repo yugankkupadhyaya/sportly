@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
-import { createMatchSchema, listMatchesQuerySchema } from '../validation/matches.validation';
+import { createMatchSchema, listMatchesQuerySchema, matchIdParamSchema, updateScoreSchema } from '../validation/matches.validation';
 import { createMatchService, listMatchesService } from '../services/matches.service';
+import { matches } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
+import { db } from '../config/db.js';
+import { ZodError } from 'zod';
 
 export const createMatch = async (req: Request, res: Response) => {
   const parsed = createMatchSchema.safeParse(req.body);
@@ -50,6 +54,54 @@ export const getMatches = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({
       error: 'Failed to list matches',
+    });
+  }
+};
+
+
+export const updateMatchScore = async (req: Request, res: Response) => {
+  try {
+   
+    const { id: matchId } = matchIdParamSchema.parse(req.params);
+
+    
+    const { homeScore, awayScore } = updateScoreSchema.parse(req.body);
+
+    const [updated] = await db
+      .update(matches)
+      .set({ homeScore, awayScore })
+      .where(eq(matches.id, matchId))
+      .returning();
+
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        message: 'Match not found',
+      });
+    }
+
+   
+    if (req.app.locals.broadcastMatchUpdated) {
+      req.app.locals.broadcastMatchUpdated(updated);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: updated,
+    });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation Failed',
+        errors: error.issues,
+      });
+    }
+
+    console.error('Error updating score:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal Server Error',
     });
   }
 };

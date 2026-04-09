@@ -4,9 +4,12 @@ import {
   createCommentarySchema,
   listCommentaryQuerySchema,
 } from '../validation/commentry.validation.js';
-import { matchIdParamSchema } from '../validation/matches.validation.js';
+import { matchIdParamSchema, updateScoreSchema } from '../validation/matches.validation.js';
 import { Request, Response } from 'express';
 import { ZodError } from 'zod';
+import { matches } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
+import { db } from '../config/db.js';
 
 export const createCommentaryController = async (req: Request, res: Response) => {
   try {
@@ -70,3 +73,4 @@ export const listCommentariesController = async (req: Request, res: Response) =>
     });
   }
 };
+
