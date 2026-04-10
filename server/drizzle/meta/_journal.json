@@ -8,6 +8,13 @@
       "when": 1775328741053,
       "tag": "0000_calm_the_anarchist",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775828545593,
+      "tag": "0001_famous_zodiak",
+      "breakpoints": true
     }
   ]
 }

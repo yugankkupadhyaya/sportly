@@ -1,12 +1,10 @@
-// services/match.service.ts
-
+import { eq } from 'drizzle-orm';
 import { ZodNumber } from 'zod';
 import { $ZodNumberParams } from 'zod/v4/core';
 import { db } from '../config/db';
 import { matches } from '../db/schema';
 import { desc } from 'drizzle-orm';
 
-// optional helper
 const getMatchStatus = (startTime: string, endTime: string) => {
   const now = new Date();
   const start = new Date(startTime);
@@ -36,9 +34,25 @@ export const createMatchService = async (data: any) => {
 };
 
 export const listMatchesService = async (limit: number) => {
+  return await db.select().from(matches).orderBy(desc(matches.startTime)).limit(limit);
+};
+export const getLiveMatches = async () => {
+  return await db.select().from(matches).where(eq(matches.status, 'live'));
+};
+export const updateMatch = async (
+  id: number,
+  data: Partial<{
+    homeScore: number;
+    awayScore: number;
+    currentMinute: number;
+    status: "scheduled" | "live" | "finished";
+  }>
+) => {
+  const [updated] = await db
+    .update(matches)
+    .set(data)
+    .where(eq(matches.id, id))
+    .returning();
 
-return await db.select().from(matches).orderBy((desc(matches.startTime))).limit(limit);
-
-
-
+  return updated;
 };

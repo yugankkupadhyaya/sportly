@@ -1,0 +1,1 @@
+ALTER TABLE "matches" ADD COLUMN "current_minute" integer DEFAULT 0 NOT NULL;

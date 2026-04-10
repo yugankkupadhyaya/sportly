@@ -30,3 +30,30 @@ export const listCommentariesService = async (matchId: number, limitInput?: numb
 
   return results;
 };
+
+export const insertCommentary = async (data: {
+  matchId: number;
+  minute: number;
+  sequence: number;
+  eventType: string;
+  team?: string | null;
+  message: string;
+}) => {
+  const last = await db
+    .select()
+    .from(commentary)
+    .where(eq(commentary.matchId, data.matchId))
+    .orderBy(desc(commentary.sequence))
+    .limit(1);
+  const nextSequence = last.length ? last[0].sequence + 1 : 1;
+
+  const [row] = await db
+      .insert(commentary)
+      .values({
+        ...data,
+        sequence: nextSequence,
+      })
+      .returning();
+  
+    return row;
+};
