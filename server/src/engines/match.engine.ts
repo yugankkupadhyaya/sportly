@@ -19,30 +19,13 @@ export const processMatch = async (
     broadcastCommentary: (matchId: string, data: any) => void;
   }
 ) => {
-  if (match.status !== 'live') {
-    return;
-  }
-  if (match.currentMinute >= 90) {
-    await services.updateMatch(match.id, {
-      status: 'finished',
-      currentMinute: 90,
-    });
-
-    return;
-  }
+  console.log('⚽ Processing match:', match.id);
 
   const minuteIncrease =
     match.currentMinute < 45
       ? Math.floor(Math.random() * 2) + 1
       : Math.floor(Math.random() * 3) + 1;
   const newMinute = match.currentMinute + minuteIncrease;
-  if (newMinute >= 90) {
-    await services.updateMatch(match.id, {
-      status: 'finished',
-      currentMinute: 90,
-    });
-    return;
-  }
 
   const event = generateEvent({
     homeTeam: match.homeTeam,
@@ -63,10 +46,12 @@ export const processMatch = async (
     }
     event.type = 'CHANCE';
   }
+
   await services.updateMatch(match.id, {
     currentMinute: newMinute,
     ...updatedScore,
   });
+
   const message = generateCommentary({
     eventType: event.type,
     team: event.team,
@@ -74,6 +59,7 @@ export const processMatch = async (
     awayTeam: match.awayTeam,
     minute: newMinute,
   });
+
   const commentaryRow = await services.insertCommentary({
     matchId: match.id,
     minute: newMinute,
@@ -82,5 +68,6 @@ export const processMatch = async (
     team: event.team === 'HOME' ? match.homeTeam : event.team === 'AWAY' ? match.awayTeam : null,
     message,
   });
+
   services.broadcastCommentary(match.id.toString(), commentaryRow);
 };

@@ -1,11 +1,16 @@
 import { Request, Response } from 'express';
-import { createMatchSchema, listMatchesQuerySchema, matchIdParamSchema, updateScoreSchema } from '../validation/matches.validation';
+import {
+  createMatchSchema,
+  listMatchesQuerySchema,
+  matchIdParamSchema,
+  updateScoreSchema,
+} from '../validation/matches.validation';
 import { createMatchService, listMatchesService } from '../services/matches.service';
 import { matches } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { db } from '../config/db.js';
 import { ZodError } from 'zod';
-
+const activeMatches = new Set<number>();
 export const createMatch = async (req: Request, res: Response) => {
   const parsed = createMatchSchema.safeParse(req.body);
 
@@ -18,10 +23,10 @@ export const createMatch = async (req: Request, res: Response) => {
 
   try {
     const result = await createMatchService(parsed.data);
-  const broadcast = req.app.locals.broadcastMatchCreated;
-  if (broadcast) {
-    broadcast(result);
-  }
+    const broadcast = req.app.locals.broadcastMatchCreated;
+    if (broadcast) {
+      broadcast(result);
+    }
 
     return res.status(201).json({
       message: 'Match created',
@@ -58,13 +63,10 @@ export const getMatches = async (req: Request, res: Response) => {
   }
 };
 
-
 export const updateMatchScore = async (req: Request, res: Response) => {
   try {
-   
     const { id: matchId } = matchIdParamSchema.parse(req.params);
 
-    
     const { homeScore, awayScore } = updateScoreSchema.parse(req.body);
 
     const [updated] = await db
@@ -80,7 +82,6 @@ export const updateMatchScore = async (req: Request, res: Response) => {
       });
     }
 
-   
     if (req.app.locals.broadcastMatchUpdated) {
       req.app.locals.broadcastMatchUpdated(updated);
     }

@@ -77,14 +77,13 @@ function handleMessage(socket: ExtendedWebSocket, data: any) {
   let message;
 
   try {
-    message = JSON.parse(data.toString());
-    console.log('Received message:', message);
+    const raw = data.toString().trim();
+
+    if (!raw || raw === '}' || raw === '{') return;
+
+    message = JSON.parse(raw);
   } catch (error) {
     console.error('Invalid JSON received:', data.toString());
-    sendJson(socket, {
-      type: 'error',
-      message: 'Invalid JSON',
-    });
     return;
   }
 
@@ -92,19 +91,16 @@ function handleMessage(socket: ExtendedWebSocket, data: any) {
     const matchId = Number(message.matchId);
 
     if (!Number.isInteger(matchId)) {
-      sendJson(socket, {
-        type: 'error',
-        message: 'Invalid matchId',
-      });
       return;
     }
 
     subscribe(matchId.toString(), socket);
+
+    console.log('✅ Subscribed to match:', matchId);
   } else {
-    console.log('Unknown message type or invalid matchId:', message);
+    console.log('Unknown message:', message);
   }
 }
-
 type Match = InferSelectModel<typeof matches>;
 function sendJson(socket: ExtendedWebSocket, payload: any) {
   if (socket.readyState !== websocket.OPEN) return;

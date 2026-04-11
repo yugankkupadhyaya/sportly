@@ -11,9 +11,9 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 
-
 export const matchStatusEnum = pgEnum('match_status', ['scheduled', 'live', 'finished']);
 
+export type MatchStatus = 'scheduled' | 'live' | 'finished';
 
 export const matches = pgTable('matches', {
   id: serial('id').primaryKey(),
@@ -29,20 +29,19 @@ export const matches = pgTable('matches', {
   currentMinute: integer('current_minute').default(0).notNull(),
 });
 
-
 export const commentary = pgTable('commentary', {
   id: serial('id').primaryKey(),
   matchId: integer('match_id')
     .references(() => matches.id, { onDelete: 'cascade' })
     .notNull(),
   minute: integer('minute'),
-  sequence: integer('sequence').notNull(), 
-  period: varchar('period', { length: 20 }), 
-  eventType: varchar('event_type', { length: 50 }).notNull(), 
-  actor: text('actor'), 
-  team: text('team'), 
+  sequence: integer('sequence').notNull(),
+  period: varchar('period', { length: 20 }),
+  eventType: varchar('event_type', { length: 50 }).notNull(),
+  actor: text('actor'),
+  team: text('team'),
   message: text('message').notNull(),
   metadata: jsonb('metadata'),
-  tags: text('tags').array(), 
+  tags: text('tags').array(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

@@ -68,6 +68,6 @@ export function generateCommentary(input: CommentaryInput): string {
   }
 
   const message = template.replace('{team}', teamName);
-
+  console.log('📝 Commentary:', message);
   return `${minute}' ${message}`;
 }

@@ -39,20 +39,22 @@ export const listMatchesService = async (limit: number) => {
 export const getLiveMatches = async () => {
   return await db.select().from(matches).where(eq(matches.status, 'live'));
 };
+export const getAllMatches = async () => {
+  return await db.select().from(matches);
+};
 export const updateMatch = async (
   id: number,
   data: Partial<{
     homeScore: number;
     awayScore: number;
     currentMinute: number;
-    status: "scheduled" | "live" | "finished";
+    status: 'scheduled' | 'live' | 'finished';
   }>
 ) => {
-  const [updated] = await db
-    .update(matches)
-    .set(data)
-    .where(eq(matches.id, id))
-    .returning();
+  const [updated] = await db.update(matches).set(data).where(eq(matches.id, id)).returning();
 
   return updated;
+};
+export const deleteMatch = async (id: number) => {
+  await db.delete(matches).where(eq(matches.id, id));
 };
