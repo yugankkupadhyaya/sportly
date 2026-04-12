@@ -5,11 +5,7 @@ import { commentary } from './db/schema';
 import { commentaryRouter } from './routes/commentary.routes';
 
 const app = express();
-app.use(
-  cors({
-    origin: 'http://localhost:5173',
-  })
-);
+app.use(cors());
 app.use(express.json());
 
 app.get('/', (req: Request, res: Response) => {

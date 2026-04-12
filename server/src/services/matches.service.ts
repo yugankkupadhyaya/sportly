@@ -34,7 +34,9 @@ export const createMatchService = async (data: any) => {
 };
 
 export const listMatchesService = async (limit: number) => {
-  return await db.select().from(matches).orderBy(desc(matches.startTime)).limit(limit);
+  const matchesList = await db.select().from(matches).orderBy(desc(matches.startTime)).limit(limit);
+  console.log('Retrieved matches:', matchesList);
+  return matchesList;
 };
 export const getLiveMatches = async () => {
   return await db.select().from(matches).where(eq(matches.status, 'live'));
