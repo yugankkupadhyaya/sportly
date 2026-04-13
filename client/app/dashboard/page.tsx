@@ -186,20 +186,40 @@ const FollowedSidebar = ({
 }) => {
   const isDark = theme === 'dark';
   const [commentary, setCommentary] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     const fetchCommentary = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/commentary/${match.id}?limit=20`);
+        console.log('FOLLOWED MATCH ID:', match.id);
+        console.log('FETCHING COMMENTARY FOR:', match.id);
 
+        // Use correct endpoint: /matches/:id/commentary?limit=20
+        const res = await fetch(`http://localhost:3001/matches/${match.id}/commentary?limit=20`);
         const json = await res.json();
+        
+        console.log('COMMENTARY RESPONSE:', json);
+
+        if (!json || !Array.isArray(json.data)) {
+          console.warn('Invalid commentary response', json);
+          setError('Failed to load commentary');
+          return;
+        }
 
         setCommentary(json.data);
+        setError(null);
       } catch (err) {
         console.error('COMMENTARY ERROR:', err);
+        setError('Failed to load commentary');
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchCommentary();
+    const interval = setInterval(fetchCommentary, 3000);
+    return () => clearInterval(interval);
   }, [match.id]);
   return (
     <motion.aside
@@ -253,18 +273,30 @@ const FollowedSidebar = ({
         <div>
           <div className="flex items-center gap-2 mb-6">
             <MessageSquare className="w-4 1-4 text-rose-500" />
-git             <h4 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+            <h4 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
               Live Commentary
             </h4>
           </div>
 
           <div className="space-y-6">
-            {commentary.map((item, i) => (
-              <div key={i} className="flex gap-4">
-                <div className="text-[10px] font-mono font-bold">{item.minute}'</div>
-                <p>{item.text}</p>
-              </div>
-            ))}
+            {isLoading && commentary.length === 0 && <div className="text-sm text-neutral-500">Loading commentary...</div>}
+            {error && <div className="text-sm text-rose-500">{error}</div>}
+            {!isLoading && !error && commentary.length === 0 && (
+              <div className="text-sm text-neutral-500">No commentary available for this match</div>
+            )}
+            {commentary.map((item, i) => {
+              console.log("MATCH ID:", match.id);
+              console.log("COMMENTARY matchId:", item.matchId);
+              if (item.matchId && item.matchId !== match.id) {
+                console.warn("Commentary not linked to this match");
+              }
+              return (
+                <div key={item.id || i} className="flex gap-4">
+                  <div className="text-[10px] font-mono font-bold">{item.minute}'</div>
+                  <p>{item.message}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -281,13 +313,21 @@ git             <h4 className="text-[11px] font-bold uppercase tracking-widest t
 export default function DashboardPage() {
   const [theme, setTheme] = useState('dark');
   const [matches, setMatches] = useState<Match[]>([]);
-  const [followedMatch, setFollowedMatch] = useState<Match | null>(null);
+  const [followedMatches, setFollowedMatches] = useState<Match[]>([]);
+  const [activeMatchId, setActiveMatchId] = useState<string | number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   const isDark = theme === 'dark';
+  
+  const followedMatch = matches.find(m => m.id === activeMatchId) || null;
+
   const handleFollow = async (match: Match) => {
-    setFollowedMatch(match);
+    if (!followedMatches.find(m => m.id === match.id)) {
+      if (followedMatches.length >= 2) return;
+      setFollowedMatches(prev => [...prev, match]);
+    }
+    setActiveMatchId(match.id);
   };
   useEffect(() => {
     const fetchMatches = async () => {
@@ -406,7 +446,7 @@ export default function DashboardPage() {
                       theme={theme}
                       match={match}
                       onFollow={handleFollow}
-                      isFollowed={followedMatch?.id === match.id}
+                      isFollowed={followedMatches.some((m) => m.id === match.id)}
                     />
                   ))}
               </div>
@@ -424,8 +464,8 @@ export default function DashboardPage() {
                       key={match.id}
                       theme={theme}
                       match={match}
-                      onFollow={setFollowedMatch}
-                      isFollowed={followedMatch?.id === match.id}
+                      onFollow={handleFollow}
+                      isFollowed={followedMatches.some((m) => m.id === match.id)}
                     />
                   ))}
               </div>
@@ -439,7 +479,7 @@ export default function DashboardPage() {
           <FollowedSidebar
             match={followedMatch}
             theme={theme}
-            onClose={() => setFollowedMatch(null)}
+            onClose={() => setActiveMatchId(null)}
           />
         )}
       </AnimatePresence>
