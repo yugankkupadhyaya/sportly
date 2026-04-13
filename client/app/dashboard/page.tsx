@@ -252,8 +252,8 @@ const FollowedSidebar = ({
 
         <div>
           <div className="flex items-center gap-2 mb-6">
-            <MessageSquare className="w-4 h-4 text-rose-500" />
-            <h4 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+            <MessageSquare className="w-4 1-4 text-rose-500" />
+git             <h4 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
               Live Commentary
             </h4>
           </div>
@@ -286,7 +286,9 @@ export default function DashboardPage() {
 
   const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   const isDark = theme === 'dark';
-
+  const handleFollow = async (match: Match) => {
+    setFollowedMatch(match);
+  };
   useEffect(() => {
     const fetchMatches = async () => {
       try {
@@ -296,9 +298,7 @@ export default function DashboardPage() {
 
         // IMPORTANT: your backend returns { success, data }
         const data = json.data;
-        const handleFollow = async (match: Match) => {
-          setFollowedMatch(match);
-        };
+
         const formatted = data.map((m: any) => ({
           id: m.id,
           homeTeam: m.homeTeam,
