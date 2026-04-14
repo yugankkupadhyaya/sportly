@@ -9,7 +9,7 @@ import { Request, Response } from 'express';
 import { ZodError } from 'zod';
 import { matches } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
-import { db } from '../config/db.js';
+import { DbUnavailableError } from '../config/db.js';
 
 export const createCommentaryController = async (req: Request, res: Response) => {
   try {
@@ -33,6 +33,12 @@ export const createCommentaryController = async (req: Request, res: Response) =>
         success: false,
         message: 'Validation Failed',
         errors: error.issues,
+      });
+    }
+    if (error instanceof DbUnavailableError) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database unavailable',
       });
     }
 
@@ -62,6 +68,12 @@ export const listCommentariesController = async (req: Request, res: Response) =>
         success: false,
         message: 'Validation Failed',
         errors: error.issues,
+      });
+    }
+    if (error instanceof DbUnavailableError) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database unavailable',
       });
     }
 

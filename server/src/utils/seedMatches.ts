@@ -1,4 +1,4 @@
-import { db } from '../config/db';
+import { getDb } from '../config/db';
 import { matches } from '../db/schema';
 import { getMatchStatus } from './match-status';
 import { MatchStatus } from '../db/schema';
@@ -78,6 +78,7 @@ function getRandomTime(status: string) {
 
 export async function seedMatches(count = 15) {
   console.log(`🌱 Seeding ${count} matches...`);
+  const db = getDb();
 
   for (let i = 0; i < count; i++) {
     const sport = getRandomSport();

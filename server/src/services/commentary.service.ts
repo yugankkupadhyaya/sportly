@@ -1,9 +1,10 @@
-import { db } from '../config/db.js';
+import { getDb } from '../config/db.js';
 import { commentary } from '../db/schema.js';
 import { CreateCommentaryInput } from '../validation/commentry.validation.js';
 import { eq, desc } from 'drizzle-orm';
 
 export const createCommentaryService = async (matchId: number, data: CreateCommentaryInput) => {
+  const db = getDb();
   const [newCommentary] = await db
     .insert(commentary)
     .values({
@@ -19,6 +20,7 @@ export const createCommentaryService = async (matchId: number, data: CreateComme
 const MAX_LIMIT = 100;
 
 export const listCommentariesService = async (matchId: number, limitInput?: number) => {
+  const db = getDb();
   const finalLimit = Math.min(limitInput ?? MAX_LIMIT, MAX_LIMIT);
 
   const results = await db
@@ -39,6 +41,7 @@ export const insertCommentary = async (data: {
   team?: string | null;
   message: string;
 }) => {
+  const db = getDb();
   const last = await db
     .select()
     .from(commentary)

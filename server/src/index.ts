@@ -7,6 +7,17 @@ import { insertCommentary } from './services/commentary.service';
 import { createMatchService, getAllMatches, updateMatch } from './services/matches.service';
 import { seedMatches } from './utils/seedMatches';
 import { attachWebSocketServer } from './websockets/server';
+import { ensureDbConnected, getDbStatus, isDbEnabled } from './config/db';
+
+function maskDatabaseUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.password) u.password = '***';
+    return u.toString();
+  } catch {
+    return url.replace(/\/\/([^:/?#]+):([^@/?#]+)@/g, '//$1:***@');
+  }
+}
 
 function installGlobalErrorHandlers() {
   process.on('uncaughtException', (err) => {
@@ -39,6 +50,11 @@ async function startServer() {
 
   console.log('[boot] validating environment');
   const env = validateEnv();
+  if (env.DATABASE_URL) {
+    console.log(`[boot] DATABASE_URL=${maskDatabaseUrl(env.DATABASE_URL)}`);
+  } else {
+    console.warn('[boot] DATABASE_URL is not set; DB features will be disabled');
+  }
 
   const PORT = env.PORT ?? 3001;
   const HOST = env.HOST ?? '0.0.0.0';
@@ -48,7 +64,12 @@ async function startServer() {
 
   let dbReady = false;
   try {
-    console.log('[boot] connecting to database / warming up');
+    if (isDbEnabled()) {
+      console.log('[boot] connecting to database (with retries) / warming up');
+      await ensureDbConnected({ retries: 4, baseDelayMs: 750 });
+    }
+
+    console.log('[boot] running db warmup query');
     const existing = await getAllMatches();
     dbReady = true;
     console.log(`[boot] matches in db: ${existing.length}`);
@@ -61,7 +82,8 @@ async function startServer() {
   } catch (err) {
     // Keep the process alive so we still get logs + can serve non-DB endpoints.
     // DB-backed routes/scheduler will remain disabled until DB works again.
-    console.error('[boot] database warmup failed (continuing without DB)', err);
+    const st = getDbStatus();
+    console.error('[boot] database warmup failed (continuing without DB)', { status: st.status, err });
   }
 
   console.log('[boot] attaching websocket server');

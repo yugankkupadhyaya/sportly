@@ -8,7 +8,7 @@ import {
 import { createMatchService, listMatchesService } from '../services/matches.service';
 import { matches } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
-import { db } from '../config/db.js';
+import { DbUnavailableError, getDb } from '../config/db.js';
 import { ZodError } from 'zod';
 const activeMatches = new Set<number>();
 export const createMatch = async (req: Request, res: Response) => {
@@ -33,6 +33,11 @@ export const createMatch = async (req: Request, res: Response) => {
       data: result,
     });
   } catch (e) {
+    if (e instanceof DbUnavailableError) {
+      return res.status(503).json({
+        error: 'Database unavailable',
+      });
+    }
     return res.status(500).json({
       error: 'Failed to create match',
     });
@@ -57,6 +62,12 @@ export const getMatches = async (req: Request, res: Response) => {
       data: data,
     });
   } catch (error) {
+    if (error instanceof DbUnavailableError) {
+      return res.status(503).json({
+        error: 'Database unavailable',
+      });
+    }
+    console.error('[matches] failed to list matches', error);
     res.status(500).json({
       error: 'Failed to list matches',
     });
@@ -69,6 +80,7 @@ export const updateMatchScore = async (req: Request, res: Response) => {
 
     const { homeScore, awayScore } = updateScoreSchema.parse(req.body);
 
+    const db = getDb();
     const [updated] = await db
       .update(matches)
       .set({ homeScore, awayScore })
@@ -96,6 +108,12 @@ export const updateMatchScore = async (req: Request, res: Response) => {
         success: false,
         message: 'Validation Failed',
         errors: error.issues,
+      });
+    }
+    if (error instanceof DbUnavailableError) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database unavailable',
       });
     }
 

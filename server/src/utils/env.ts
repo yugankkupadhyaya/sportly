@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 const EnvSchema = z.object({
-  // Required for the server to boot
-  DATABASE_URL: z.string().min(1),
+  // Optional: server can boot without DB (DB features disabled)
+  DATABASE_URL: z.string().min(1).optional(),
   CLIENT_URL: z.string().min(1),
   // Optional (only required if enabling auth features)
   JWT_SECRET: z.string().min(1).optional(),
@@ -31,7 +31,7 @@ export function validateEnv(): Env {
   const parsed = EnvSchema.safeParse(raw);
   if (parsed.success) return parsed.data;
 
-  const requiredKeys: (keyof typeof raw)[] = ['DATABASE_URL', 'CLIENT_URL'];
+  const requiredKeys: (keyof typeof raw)[] = ['CLIENT_URL'];
   const missing = requiredKeys.filter((k) => !raw[k] || String(raw[k]).trim() === '').map(String).sort();
 
   console.error('[env] invalid or missing environment variables');
