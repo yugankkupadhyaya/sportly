@@ -91,6 +91,8 @@ interface Match {
   league: string;
 }
 
+type MatchId = Match['id'];
+
 const MatchCard = ({
   match,
   theme,
@@ -101,7 +103,7 @@ const MatchCard = ({
   match: Match;
   theme: string;
   onFollow: (m: Match) => void;
-  onUnfollow?: (id: string | number) => void;
+  onUnfollow?: (id: MatchId) => void;
   isFollowed: boolean;
 }) => {
   const isDark = theme === 'dark';
@@ -191,11 +193,11 @@ const FollowedSidebar = ({
   onUnfollow
 }: {
   followedMatches: Match[];
-  activeMatchId: string | number;
+  activeMatchId: MatchId;
   theme: string;
   onClose: () => void;
-  onSwitchMatch: (id: string | number) => void;
-  onUnfollow: (id: string | number) => void;
+  onSwitchMatch: (id: MatchId) => void;
+  onUnfollow: (id: MatchId) => void;
 }) => {
   const isDark = theme === 'dark';
   const match = followedMatches.find(m => m.id === activeMatchId);
@@ -558,7 +560,7 @@ const ProfileView = ({ theme, userMatches }: { theme: string; userMatches: numbe
   );
 };
 
-const HistoryView = ({ theme, matches, onFollow, onUnfollow, followedMatches }: { theme: string; matches: Match[]; onFollow: (m: Match) => void; onUnfollow: (id: string | number) => void; followedMatches: Match[] }) => {
+const HistoryView = ({ theme, matches, onFollow, onUnfollow, followedMatches }: { theme: string; matches: Match[]; onFollow: (m: Match) => void; onUnfollow: (id: MatchId) => void; followedMatches: Match[] }) => {
   const isDark = theme === 'dark';
   return (
     <motion.div 
@@ -578,7 +580,7 @@ const HistoryView = ({ theme, matches, onFollow, onUnfollow, followedMatches }: 
               theme={theme}
               match={match}
               onFollow={onFollow}
-              onUnfollow={onFollow} // This view uses onFollow natively bound to Dashboard context so passing same reference is tricky. HistoryView doesn't explicitly expose handleUnfollow currently, we will fix below
+              onUnfollow={onUnfollow}
               isFollowed={followedMatches.some((m) => m.id === match.id)}
             />
           ))}
@@ -690,7 +692,7 @@ export default function DashboardPage() {
   const [view, setView] = useState('dashboard');
   const [matches, setMatches] = useState<Match[]>([]);
   const [followedMatches, setFollowedMatches] = useState<Match[]>([]);
-  const [activeMatchId, setActiveMatchId] = useState<string | number | null>(null);
+  const [activeMatchId, setActiveMatchId] = useState<MatchId | null>(null);
   const [loading, setLoading] = useState(true);
 
   const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -707,7 +709,7 @@ export default function DashboardPage() {
     setActiveMatchId(match.id);
   };
 
-  const handleUnfollow = (id: string | number) => {
+  const handleUnfollow = (id: MatchId) => {
     setFollowedMatches(prev => {
       const updated = prev.filter(m => m.id !== id);
       if (activeMatchId === id) {
