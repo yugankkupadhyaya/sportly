@@ -1,34 +1,44 @@
-import 'dotenv/config';
+import { z } from 'zod';
 
-export function validateEnv() {
-  const ObjectEnvs = [
-    'DATABASE_URL',
-    'JWT_SECRET',
-    'GOOGLE_CLIENT_ID',
-    'GOOGLE_CLIENT_SECRET',
-    'CLIENT_URL',
-  ];
+const EnvSchema = z.object({
+  // Required for the server to boot
+  DATABASE_URL: z.string().min(1),
+  CLIENT_URL: z.string().min(1),
+  // Optional (only required if enabling auth features)
+  JWT_SECRET: z.string().min(1).optional(),
+  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+  // Optional runtime config
+  HOST: z.string().min(1).optional(),
+  PORT: z.coerce.number().int().positive().optional(),
+  NODE_ENV: z.string().min(1).optional(),
+});
 
-  console.log("🔍 Validating Environment Variables...");
+export type Env = z.infer<typeof EnvSchema>;
 
-  const missingEnvs: string[] = [];
+export function validateEnv(): Env {
+  const raw = {
+    DATABASE_URL: process.env.DATABASE_URL,
+    CLIENT_URL: process.env.CLIENT_URL,
+    JWT_SECRET: process.env.JWT_SECRET,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+    HOST: process.env.HOST,
+    PORT: process.env.PORT,
+    NODE_ENV: process.env.NODE_ENV,
+  };
 
-  for (const env of ObjectEnvs) {
-    // Check if the variable is missing
-    if (!process.env[env] || process.env[env] === '') {
-      // Small exception for DATABASE_URL if MONGO_URI is present instead
-      if (env === 'DATABASE_URL' && process.env['MONGO_URI']) {
-        continue;
-      }
-      missingEnvs.push(env);
-    }
+  const parsed = EnvSchema.safeParse(raw);
+  if (parsed.success) return parsed.data;
+
+  const requiredKeys: (keyof typeof raw)[] = ['DATABASE_URL', 'CLIENT_URL'];
+  const missing = requiredKeys.filter((k) => !raw[k] || String(raw[k]).trim() === '').map(String).sort();
+
+  console.error('[env] invalid or missing environment variables');
+  if (missing.length > 0) {
+    console.error(`[env] missing: ${missing.join(', ')}`);
   }
-
-  if (missingEnvs.length > 0) {
-    console.error(`❌ CRITICAL ERROR: Missing required environment variables: ${missingEnvs.join(', ')}`);
-    console.error("Please ensure these are set in your environment or .env file before starting the app.");
-    process.exit(1);
-  }
-
-  console.log("✅ Environment Variables Validated Successfully!");
+  console.error('[env] full validation errors:', parsed.error.flatten().fieldErrors);
+  console.error('[env] set these in Render service env vars (or a local .env) and restart');
+  process.exit(1);
 }
