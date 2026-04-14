@@ -25,12 +25,11 @@ import {
   History,
   Mail,
   Code2,
-  Linkedin,
-  Twitter,
+ 
   MapPin,
   ExternalLink,
 } from 'lucide-react';
-
+import { FaLinkedin, FaTwitter } from "react-icons/fa";
 /** * UI COMPONENTS
  */
 const Button = ({ className, variant, size, theme, ...props }: any) => {
@@ -218,7 +217,9 @@ const FollowedSidebar = ({
           return;
         }
 
-        setCommentary(json.data); // Keep DESC order explicitly for newest at top
+        setCommentary(
+          json.data.sort((a: any, b: any) => b.sequence - a.sequence)
+        );
         setError(null);
       } catch (err) {
         setError('Failed to load commentary');
@@ -240,7 +241,14 @@ const FollowedSidebar = ({
       try {
         const payload = JSON.parse(event.data);
         if (payload.type === 'commentary' && payload.data) {
-          setCommentary(prev => [payload.data, ...prev]);
+          setCommentary(prev => {
+            const exists = prev.find(p => p.sequence === payload.data.sequence);
+            if (exists) return prev;
+
+            const updated = [payload.data, ...prev];
+
+            return updated.sort((a, b) => b.sequence - a.sequence);
+          });
         }
       } catch (err) {
         console.error("WS Parse error", err);
@@ -340,7 +348,7 @@ const FollowedSidebar = ({
               const isLatest = i === 0;
               return (
                 <motion.div 
-                  key={item.id || item.sequence || i} 
+                  key={item.sequence} 
                   initial={isLatest ? { backgroundColor: 'rgba(255, 59, 92, 0.2)' } : {}}
                   animate={{ backgroundColor: 'transparent' }}
                   transition={{ duration: 2 }}
@@ -588,6 +596,9 @@ const ContactView = ({ theme }: { theme: string }) => {
       value: 'yugankkkupadhyaya',
       icon: <Code2 className="w-5 h-5" />,
       href: 'https://github.com/yugankkkupadhyaya',
+
+
+      
     },
     {
       name: 'Email',
@@ -598,13 +609,13 @@ const ContactView = ({ theme }: { theme: string }) => {
     {
       name: 'LinkedIn',
       value: 'Yugank Upadhyaya',
-      icon: <Linkedin className="w-5 h-5" />,
+      icon: <FaLinkedin className="w-5 h-5" />,
       href: 'https://www.linkedin.com/in/yugank-upadhyaya-188786248/',
     },
     {
       name: 'X',
       value: '@yugankupadhyaya',
-      icon: <Twitter className="w-5 h-5" />,
+      icon: <FaTwitter className="w-5 h-5" />,
       href: 'https://x.com/yugankupadhyaya',
     },
   ];

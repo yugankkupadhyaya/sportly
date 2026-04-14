@@ -37,7 +37,6 @@ export function startScheduler(services: {
   updateMatch: (id: number, data: any) => Promise<any>;
   insertCommentary: (data: any) => Promise<any>;
   broadcastCommentary: (matchId: string, data: any) => void;
-  deleteMatch: (id: number) => Promise<void>;
   createMatch?: (data: any) => Promise<any>;
 }) {
   console.log('🚀 Scheduler started...');
@@ -46,7 +45,10 @@ export function startScheduler(services: {
     console.log('⏱️ Scheduler tick...');
 
     const matches = await services.getAllMatches();
-    let liveCount = 0;
+    let liveCount = matches.filter(m => m.status === 'live').length;
+    
+    console.log("MATCH COUNT:", matches.length);
+    console.log("LIVE MATCHES:", liveCount);
 
     for (const match of matches) {
       if (!match.startTime || !match.endTime) continue;
@@ -57,7 +59,6 @@ export function startScheduler(services: {
 
       if (match.status !== 'live') continue;
 
-      liveCount++;
       await processMatch(match, services);
 
       const sport = match.sport as keyof typeof sportMatchDurations;

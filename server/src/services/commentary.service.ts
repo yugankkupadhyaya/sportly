@@ -25,7 +25,7 @@ export const listCommentariesService = async (matchId: number, limitInput?: numb
     .select()
     .from(commentary)
     .where(eq(commentary.matchId, matchId))
-    .orderBy(desc(commentary.createdAt))
+    .orderBy(desc(commentary.sequence))
     .limit(finalLimit);
 
   return results;
