@@ -1,5 +1,6 @@
 import { generateEvent } from './event.engine';
 import { generateCommentary } from './commentary.engine';
+import { Sport } from './sports.config';
 
 type Match = {
   id: number;
@@ -9,6 +10,8 @@ type Match = {
   awayScore: number;
   status: 'scheduled' | 'live' | 'finished';
   currentMinute: number;
+  sport?: Sport | string;
+  league?: string;
 };
 
 export const processMatch = async (
@@ -21,10 +24,7 @@ export const processMatch = async (
 ) => {
   console.log('⚽ Processing match:', match.id);
 
-  const minuteIncrease =
-    match.currentMinute < 45
-      ? Math.floor(Math.random() * 2) + 1
-      : Math.floor(Math.random() * 3) + 1;
+  const minuteIncrease = 1;
   const newMinute = match.currentMinute + minuteIncrease;
 
   const event = generateEvent({
@@ -32,6 +32,7 @@ export const processMatch = async (
     awayTeam: match.awayTeam,
     homeScore: match.homeScore,
     awayScore: match.awayScore,
+    sport: match.sport,
   });
 
   let updatedScore = {
@@ -44,7 +45,6 @@ export const processMatch = async (
     } else {
       updatedScore.awayScore += 1;
     }
-    event.type = 'CHANCE';
   }
 
   await services.updateMatch(match.id, {
@@ -58,6 +58,7 @@ export const processMatch = async (
     homeTeam: match.homeTeam,
     awayTeam: match.awayTeam,
     minute: newMinute,
+    sport: match.sport,
   });
 
   const commentaryRow = await services.insertCommentary({

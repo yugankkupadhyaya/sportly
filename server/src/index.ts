@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import http from 'http';
 import { attachWebSocketServer } from './websockets/server';
 import { startScheduler } from './scheduler/game.scheduler';
-import { getLiveMatches, updateMatch } from './services/matches.service';
+import { getLiveMatches, updateMatch, createMatchService } from './services/matches.service';
 import { insertCommentary } from './services/commentary.service';
 import { seedMatches } from './utils/seedMatches';
 import { deleteMatch } from './services/matches.service';
@@ -26,6 +26,7 @@ startScheduler({
   deleteMatch: async (id: number) => {
     await deleteMatch(id);
   },
+  createMatch: async (data: any) => await createMatchService(data),
 });
 server.listen(PORT, HOST, () => {
   const baseUrl = HOST === '0.0.0.0' ? `http://localhost:${PORT}` : `HTTP://${HOST}:${PORT}`;
