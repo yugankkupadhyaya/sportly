@@ -5,7 +5,13 @@ import { commentary } from './db/schema';
 import { commentaryRouter } from './routes/commentary.routes';
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: ['https://sportly-tau.vercel.app/'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 app.get('/', (req: Request, res: Response) => {
