@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { BASE_URL, WS_BASE_URL } from '../../lib/api';
 import {
   Activity,
   Trophy,
@@ -211,7 +212,7 @@ const FollowedSidebar = ({
     // Initial fetch to load historical data (mapped in descending order internally)
     const fetchCommentary = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/matches/${match.id}/commentary?limit=20`);
+        const res = await fetch(`${BASE_URL}/matches/${match.id}/commentary?limit=20`);
         const json = await res.json();
         
         if (!json || !Array.isArray(json.data)) {
@@ -233,7 +234,7 @@ const FollowedSidebar = ({
     fetchCommentary();
     
     // Establish real-time websocket connection over HTTP polling
-    const ws = new WebSocket(`ws://localhost:3001/ws`);
+    const ws = new WebSocket(`${WS_BASE_URL}/ws`);
     
     ws.onopen = () => {
       ws.send(JSON.stringify({ type: 'subscribe', matchId: match.id }));
@@ -721,7 +722,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchMatches = async () => {
       try {
-        const res = await fetch('http://localhost:3001/matches');
+        const res = await fetch(`${BASE_URL}/matches`);
 
         const json = await res.json();
 
