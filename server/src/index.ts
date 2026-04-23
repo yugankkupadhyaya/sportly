@@ -19,6 +19,7 @@ function maskDatabaseUrl(url: string): string {
   }
 }
 
+
 function installGlobalErrorHandlers() {
   process.on('uncaughtException', (err) => {
     console.error('[fatal] uncaughtException', err);
