@@ -722,26 +722,52 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchMatches = async () => {
       try {
+        // const res = await fetch(`${BASE_URL}/matches`);
+
+        // const json = await res.json();
+
+        // // IMPORTANT: your backend returns { success, data }
+        // const data = json.data;
+
+        // const formatted = data.map((m: any) => ({
+        //   id: m.id,
+        //   homeTeam: m.homeTeam,
+        //   awayTeam: m.awayTeam,
+        //   homeScore: m.homeScore,
+        //   awayScore: m.awayScore,
+        //   status: m.status,
+        //   currentMinute: m.currentMinute,
+        //   sport: m.sport || 'Football',
+        //   league: m.league || 'League',
+        // }));
+
+        // setMatches(formatted);
+
+
         const res = await fetch(`${BASE_URL}/matches`);
+const json = await res.json();
 
-        const json = await res.json();
+console.log("FULL RESPONSE:", json); // 🔥 debug
 
-        // IMPORTANT: your backend returns { success, data }
-        const data = json.data;
+if (!json || !Array.isArray(json.data)) {
+  console.error("Invalid response shape:", json);
+  setMatches([]);
+  return;
+}
 
-        const formatted = data.map((m: any) => ({
-          id: m.id,
-          homeTeam: m.homeTeam,
-          awayTeam: m.awayTeam,
-          homeScore: m.homeScore,
-          awayScore: m.awayScore,
-          status: m.status,
-          currentMinute: m.currentMinute,
-          sport: m.sport || 'Football',
-          league: m.league || 'League',
-        }));
+const formatted = json.data.map((m: any) => ({
+  id: m.id,
+  homeTeam: m.homeTeam,
+  awayTeam: m.awayTeam,
+  homeScore: m.homeScore,
+  awayScore: m.awayScore,
+  status: m.status,
+  currentMinute: m.currentMinute,
+  sport: m.sport || 'Football',
+  league: m.league || 'League',
+}));
 
-        setMatches(formatted);
+setMatches(formatted);
       } catch (err) {
         console.error('MATCH FETCH ERROR:', err);
       } finally {
