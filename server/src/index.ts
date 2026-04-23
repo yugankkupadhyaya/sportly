@@ -7,7 +7,7 @@ import { insertCommentary } from './services/commentary.service';
 import { createMatchService, getAllMatches, updateMatch } from './services/matches.service';
 import { seedMatches } from './utils/seedMatches';
 import { attachWebSocketServer } from './websockets/server';
-import { ensureDbConnected, getDbStatus, isDbEnabled } from './config/db';
+import { ensureDbConnected, getDbStatus, isDbEnabled, runDbMigrations } from './config/db';
 
 function maskDatabaseUrl(url: string): string {
   try {
@@ -67,6 +67,9 @@ async function startServer() {
     if (isDbEnabled()) {
       console.log('[boot] connecting to database (with retries) / warming up');
       await ensureDbConnected({ retries: 4, baseDelayMs: 750 });
+
+      // Optional, opt-in. Set DB_RUN_MIGRATIONS_ON_STARTUP=true in Render/env.
+      await runDbMigrations();
     }
 
     console.log('[boot] running db warmup query');

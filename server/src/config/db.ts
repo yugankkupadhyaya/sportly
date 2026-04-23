@@ -1,5 +1,7 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pkg from 'pg';
+import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import path from 'path';
 
 const { Pool } = pkg;
 
@@ -131,6 +133,29 @@ export async function ensureDbConnected(opts?: { retries?: number; baseDelayMs?:
       await sleep(baseDelayMs * attempt);
     }
   }
+}
+
+export async function runDbMigrations(opts?: { migrationsFolder?: string }) {
+  initDbOnce();
+  if (!db || !pool) {
+    throw new DbUnavailableError('Database is disabled (missing DATABASE_URL)');
+  }
+
+  const flagRaw = String(process.env.DB_RUN_MIGRATIONS_ON_STARTUP ?? '');
+  const shouldRun = flagRaw.toLowerCase() === 'true';
+  if (!shouldRun) {
+    console.log(
+      `[db] migrations skipped (DB_RUN_MIGRATIONS_ON_STARTUP=${flagRaw || '(unset)'})`
+    );
+    return;
+  }
+
+  const migrationsFolder =
+    opts?.migrationsFolder ?? path.resolve(process.cwd(), 'drizzle');
+
+  console.log(`[db] running migrations from ${migrationsFolder}`);
+  await migrate(db, { migrationsFolder });
+  console.log('[db] migrations complete');
 }
 
 export async function shutdownDb() {
